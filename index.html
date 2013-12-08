@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <script src="actionlist.js"></script>
+    <script>
+      (function() {
+        function Wait (time) {
+          this.currentTime = 0;
+          this.endTime = time * 1000;
+          Action.apply(this);
+        }
+        Wait.prototype = Object.create(Action.prototype);
+        Wait.prototype.update = function (dt) {
+          console.log('Wait', this.__guid, this.endTime - this.currentTime);
+          this.currentTime += dt;
+          if (this.currentTime >= this.endTime) {
+            this.complete();
+          }
+          Action.prototype.update.apply(this, arguments);
+        };
+
+        function Random (number) {
+          this.number = number;
+          Action.apply(this);
+        }
+        Random.prototype = Object.create(Action.prototype);
+        Random.prototype.update = function (dt) {
+          var rand = Math.random();
+          console.log('Random', this.__guid, rand);
+          if (rand <= this.number) {
+            this.complete();
+          }
+          Action.prototype.update.apply(this, arguments);
+        };
+
+        function Count (number) {
+          this.number = number;
+          Action.apply(this);
+        }
+        Count.prototype = Object.create(Action.prototype);
+        Count.prototype.update = function (dt) {
+          this.number--;
+          console.log('Count', this.__guid, this.number);
+          if (this.number <= 0) {
+            this.complete();
+          }
+          Action.prototype.update.apply(this, arguments);
+        };
+
+        var requestAnimFrame = (function(){
+          return  window.requestAnimationFrame       ||
+                  window.webkitRequestAnimationFrame ||
+                  window.mozRequestAnimationFrame    ||
+                  function( callback ){
+                    window.setTimeout(callback, 1000 / 60);
+                  };
+        })();
+
+        var rootActionList = new ActionList(false);
+        var time = Date.now();
+
+        function loop () {
+          var newTime = Date.now();
+          rootActionList.update(newTime - time);
+          time = newTime;
+          if (!rootActionList.isEmpty) {
+            requestAnimFrame(loop);
+          }
+        }
+
+        rootActionList.append(ActionList.serial([
+          new Wait(.5),
+          new Random(.02),
+          new Wait(.5),
+          ActionList.parallel([
+            new Count(5),
+            new Count(10),
+            new Count(15),
+          ]),
+          new Wait()
+        ]));
+
+        loop();
+
+      })();
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
